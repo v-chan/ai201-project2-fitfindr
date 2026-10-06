@@ -29,6 +29,9 @@ tool calls and returns a fit card — in at least 4 of 5 tries.
      "my search is a plain keyword match and some phrasings will miss" is a
      real answer. -->
 
+`search_listings` will score items based on matching keywords so there could be a miss for 
+an item that fits the description, but has keywords that are synonyms. For example, a user could put "early 2000s" but the keyword the item has is "Y2K" and result in a miss.
+
 ---
 
 ## 2. An impossible query stops before the second tool
@@ -40,6 +43,7 @@ Given a query that matches no listings, the agent stops before calling
 <!-- Why is 5 of 5 reasonable here when criterion 1 isn't? What's different
      about this path? -->
 
+This should be 5 out of 5 since it is important for the branch path for no results to always be taken by the agent if `search_listings` returns an empty list. We also want to tell the user that no listings were found and how they can change their query. Otherwise, this would pass input to the other tools that they do not expect. 
 ---
 
 ## 3. Something about state
@@ -54,10 +58,10 @@ Given a query that matches no listings, the agent stops before calling
      compares session["selected_item"] against what actually reached
      suggest_outfit is the shape you're after. -->
 
-
+The item id of session["selected_item"] should match the id of the item in `suggest_outfit` for 5 out of 5 tries.
 
 **Why this target:**
-
+It's important for the same item returned from `search_listings` and saved to session["selected_item"] to be the same one passed to `suggest_outfit`. Otherwise, this would cause inconsistencies such as suggest_outfit creating an outfit based on an item that was unrelated to the search results. It should be 5 out of 5 because the session state should be consistent at all times and a lower threshold would be allowing the session state to be corrupted.
 
 
 ---
@@ -75,10 +79,11 @@ Given a query that matches no listings, the agent stops before calling
      sentence? A card longer than a caption anyone would post? Any of those can
      be turned into a number. -->
 
+The fit card captions should be no longer than 400 characters in 5 out of 5 tries.
 
 
 **Why this target:**
-
+Since an average sentence is around 100 characters and the output should be 2-4 sentences, I chose 400 characters at the limit. I set it at 5 out of 5 since the fit card caption needs to always meet the limit to be usable as a social media post and the length limit should be addressed by `create_fit_card`'s prompt.
 
 
 ---
@@ -92,11 +97,10 @@ Given a query that matches no listings, the agent stops before calling
      search respects a price ceiling — anything, as long as it names a number
      or an observable outcome. -->
 
-
+If the user has an empty wardrobe and found an item, `create_fit_card` should sucessfully create a caption from the generalized styling advice from `suggest_outfit` 5 tries out of 5.
 
 **Why this target:**
-
-
+The `create_fit_card` should not fail based on generalized styling advice from `suggest_oufit`. I chose 5 out of 5 since the listing dict for the item is always passed into `create_fit_card` so there is enough information to generate a caption about what the user found.
 
 ---
 
