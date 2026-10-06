@@ -59,24 +59,33 @@
 
 ### `search_listings`
 
-- **What it does:**
-- **Inputs:** <!-- name and type each: `max_price` (float), not "a price" -->
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Searches the listing data to find items matching the description and filters by size and max price if specified. 
+- **Inputs:**  
+  - `description` (str) - contains keywords describing the item user wants
+  - `size` (str) - size of item to filter results by
+  - `max_price` (float) - specifies max price of items that should be returned
+    <!-- name and type each: `max_price` (float), not "a price" -->
+- **Returns:** A list of dicts where each dict is a listing dict representing an item that contains:
+  - [id (str), title (str), description (str), category (str), style_tags (list of str), size (str), condition (str), price (float), colors (list of str), brand (str or None), platform (str)]
+- **When it has nothing:** It retuns an empty list `[]`when there are no items in the listing data that match the description, size, and max_price.
 
 ### `suggest_outfit`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Suggest an 1-2 outfits based on new item and existing wardrobe.
+- **Inputs:** 
+  - `new_item`(dict)  - a listing dict representing the item. It contains [id (str), title (str), description (str), category (str), style_tags (list of str), size (str), condition (str), price (float), colors (list of str), brand (str or None), platform (str)]
+  - `wardrobe`(dict) - The items key maps to a list of dicts, where each dict contains `id` (str), `name`(str), `category` (str), `colors` (list of str), `style_tags`(list of str), `notes` (str)
+- **Returns:** Returns 1-2 outfit suggestions based on the new item and existing items in the wardrobe. 
+- **When it has nothing:** Provides general styling advice if the wardrobe is empty. It does not return an empty string or raise an error in this case.
 
 ### `create_fit_card`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Creates a 2-4 sentence caption about the item and the outfit suggestion that someone would post on social media. 
+- **Inputs:** 
+  - `outfit` (str) - the outfit suggestion from `suggest_outfit`
+  - `new_item` (dict) - listing dict that contains [id (str), title (str), description (str), category (str), style_tags (list of str), size (str), condition (str), price (float), colors (list of str), brand (str or None), platform (str)
+- **Returns:** A caption that’s 2-4 sentences long describing the item, it’s price, and which platform it’s from. It also mentions the outfit they were able to make with the item and the vibe of it.
+- **When it has nothing:** It returns a message saying that no outfit was provided. It does not raise an error or return an empty string.
 
 ---
 
@@ -93,13 +102,16 @@
      The grader checks your code against what you claim here, so the file and
      function have to be real. -->
 
-**Branch rule:**
+**Branch rule:** If `search_listings` returns an empty list, put a message describing that no items were found and what parameters user can change using `_nothing_found_message` in `session[error]` and return the session. Otherwise, if `search_listings` has results, take the first item and store it in `session[selected_item]` and use it to call `suggest_outfit`.
 
 **Where it lives:** `agent.py::run_agent`
 
 **How the query is parsed:** <!-- regex, string splitting, or asking the model — say which -->
+It is parsed using regex. `parse_query` extracts the price using `_PRICE_RE` by matching pharses such as “up to $30” and extracts the price from the phrase. The matched text is replaced with a space. It extracts the size using `_SIZE_RE` by looking for pharses starting with size and ending with a size word such as ‘L’. It falls back on `_BARE_SIZE_RE` if only a size word is mentioned. Then the matched text is replaced with a space. Finally, the description is extracted from the remaining text after striping the whitespace and commas. 
 
 **What moves through the session:** <!-- which fields, in what order -->
+A new session is created using `query` (str) and `wardobe` (dict). `query` is parsed by `parse_query` and stored in the `session["parsed"]`. Then `search_listings` is called on the parsed query by passing `￼`parsed["description"`￼]`, `parsed[“size”]`, `parsed[“max_price”]`. The result is then saved to session[“search_results”]. If empty, an error message indicating nothing found is created using `_nothing_found_message`  and the session is stopped. If not empty, first item from result is passed to `suggest_outfit` along with the sesion’s wardrobe. Then `create_fit_card` is called based on the outfit suggestion from `suggest_outfit` and the listing dict for the selected item. 
+
 
 ---
 
