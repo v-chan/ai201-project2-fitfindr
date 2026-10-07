@@ -97,7 +97,7 @@ Since an average sentence is around 100 characters and the output should be 2-4 
      search respects a price ceiling — anything, as long as it names a number
      or an observable outcome. -->
 
-If the user has an empty wardrobe and found an item, `create_fit_card` should sucessfully create a caption from the generalized styling advice from `suggest_outfit` 5 tries out of 5.
+If the user has an empty wardrobe and found an item, `create_fit_card` should return a non-empty caption using the generalized styling advice from `suggest_outfit` 5 tries out of 5.
 
 **Why this target:**
 The `create_fit_card` should not fail based on generalized styling advice from `suggest_oufit`. I chose 5 out of 5 since the listing dict for the item is always passed into `create_fit_card` so there is enough information to generate a caption about what the user found.

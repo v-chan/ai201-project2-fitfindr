@@ -40,8 +40,7 @@
 ## What This Does
 
 <!-- Three or four sentences: what a user asks for, and what they get back. -->
-
-
+This is an app that let’s lets a user find clothing listed on second-hand clothing platforms using a plain language description of the item, desired size, and max price. If there’s a matching item, it will recommned outfits that pair well with the items in the user’s wardrobe and generate a social media caption they can use to post about their find. If no matches are found, it will give suggestions on how to widen the user’s search such as using broader keywords or increasing the max price.
 
 ---
 
@@ -76,14 +75,14 @@
   - `new_item`(dict)  - a listing dict representing the item. It contains [id (str), title (str), description (str), category (str), style_tags (list of str), size (str), condition (str), price (float), colors (list of str), brand (str or None), platform (str)]
   - `wardrobe`(dict) - The items key maps to a list of dicts, where each dict contains `id` (str), `name`(str), `category` (str), `colors` (list of str), `style_tags`(list of str), `notes` (str)
 - **Returns:** Returns 1-2 outfit suggestions based on the new item and existing items in the wardrobe. 
-- **When it has nothing:** Provides general styling advice if the wardrobe is empty. It does not return an empty string or raise an error in this case.
+- **When it has nothing:** Provides general styling advice for the item if the wardrobe is empty. It does not return an empty string or raise an error in this case.
 
 ### `create_fit_card`
 
 - **What it does:** Creates a 2-4 sentence caption about the item and the outfit suggestion that someone would post on social media. 
 - **Inputs:** 
   - `outfit` (str) - the outfit suggestion from `suggest_outfit`
-  - `new_item` (dict) - listing dict that contains [id (str), title (str), description (str), category (str), style_tags (list of str), size (str), condition (str), price (float), colors (list of str), brand (str or None), platform (str)
+  - `new_item` (dict) - listing dict that contains [id (str), title (str), description (str), category (str), style_tags (list of str), size (str), condition (str), price (float), colors (list of str), brand (str or None), platform (str)]
 - **Returns:** A caption that’s 2-4 sentences long describing the item, it’s price, and which platform it’s from. It also mentions the outfit they were able to make with the item and the vibe of it.
 - **When it has nothing:** It returns a message saying that no outfit was provided. It does not raise an error or return an empty string.
 
@@ -107,10 +106,10 @@
 **Where it lives:** `agent.py::run_agent`
 
 **How the query is parsed:** <!-- regex, string splitting, or asking the model — say which -->
-It is parsed using regex. `parse_query` extracts the price using `_PRICE_RE` by matching pharses such as “up to $30” and extracts the price from the phrase. The matched text is replaced with a space. It extracts the size using `_SIZE_RE` by looking for pharses starting with size and ending with a size word such as ‘L’. It falls back on `_BARE_SIZE_RE` if only a size word is mentioned. Then the matched text is replaced with a space. Finally, the description is extracted from the remaining text after striping the whitespace and commas. 
+It is parsed using regex. `parse_query` extracts the price using `_PRICE_RE` by matching pharses such as “up to $30” and extracts the price from the phrase. The matched text is replaced with a space. It extracts the size using `_SIZE_RE` by looking for pharses starting with size and ending with a size word such as ‘L’. It falls back on `_BARE_SIZE_RE` if only a size word such as `L`  or `M` is mentioned. Then the matched text is replaced with a space. Finally, the description is extracted from the remaining text after striping the whitespace and commas. 
 
 **What moves through the session:** <!-- which fields, in what order -->
-A new session is created using `query` (str) and `wardobe` (dict). `query` is parsed by `parse_query` and stored in the `session["parsed"]`. Then `search_listings` is called on the parsed query by passing `￼`parsed["description"`￼]`, `parsed[“size”]`, `parsed[“max_price”]`. The result is then saved to session[“search_results”]. If empty, an error message indicating nothing found is created using `_nothing_found_message`  and the session is stopped. If not empty, first item from result is passed to `suggest_outfit` along with the sesion’s wardrobe. Then `create_fit_card` is called based on the outfit suggestion from `suggest_outfit` and the listing dict for the selected item. 
+A new session is created using `query` (str) and `wardobe` (dict). `query` is parsed by `parse_query` and stored in the `session["parsed"]`. Then `search_listings` is called on the parsed query by passing ￼`parsed["description"]`,  `parsed[“size”]`, `parsed[“max_price”]`. The result is then saved to `session[“search_results”]`. If empty, an error message indicating nothing found is created using `_nothing_found_message`  and the session is stopped. If not empty, first item from result is passed to `suggest_outfit` along with the sesion’s wardrobe and the result is stored in `session[outfit_suggestion]`. Then `create_fit_card` is called using the session’s outfit suggestion and the listing dict for the selected item. Finally, the created fit card is saved into `session[fit_card]`
 
 
 ---
@@ -125,8 +124,41 @@ A new session is created using `query` (str) and `wardobe` (dict). `query` is pa
 **One full query**
 
 ```
-$ python app.py ask '...'
+$ python app.py ask 'vintage t-shirt under $30'
+[1] parse_query
+      in:  vintage t-shirt under $30
+      out: dict with keys: description, size, max_price
+[2] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: 10 items: Oversized Flannel Shirt — Plaid Red/Black, Vintage Polo Shirt — Forest Green, Y2K Baby Tee — Butterfly Print … +7 more
+      →    10 match(es)
+[3] select_item
+      out: Oversized Flannel Shirt — Plaid Red/Black ($22.0, thredUp)
+[4] suggest_outfit
+      in:  Oversized Flannel Shirt — Plaid Red/Black ($22.0, thredUp)
+      out: Outfit 1: - Oversized Flannel Shirt — Plaid Red/Black - White ribbed tank top - Baggy straight-leg jeans, dark…
+      →    10 wardrobe item(s)
+[5] create_fit_card
+      in:  Oversized Flannel Shirt — Plaid Red/Black ($22.0, thredUp)
+      out: Scoreeee! Just scored this vintage Woolrich flannel for $22 on thredUp and I’m obsessed. It’s giving total 90s…
 
+  Found:    Oversized Flannel Shirt — Plaid Red/Black — $22.0 on thredUp
+
+  Outfit:   Outfit 1:
+- Oversized Flannel Shirt — Plaid Red/Black
+- White ribbed tank top
+- Baggy straight-leg jeans, dark wash
+- Chunky white sneakers
+- Black crossbody bag
+
+Outfit 2:
+- Oversized Flannel Shirt — Plaid Red/Black (worn open as a layer)
+- Black cropped zip hoodie (layered underneath)
+- Wide-leg khaki trousers
+- Black combat boots
+- Brown leather belt
+
+  Fit card: Scoreeee! Just scored this vintage Woolrich flannel for $22 on thredUp and I’m obsessed. It’s giving total 90s grunge—been throwing it on over baggy jeans with chunky kicks or layering it with a hoodie and combat boots. Such a good find!
 ```
 
 **The three tools, tested one at a time**
@@ -140,7 +172,7 @@ $ python -c "from tools import search_listings; print(search_listings('graphic t
 ```
 
 ```
-$ python -c "from tools import suggest_outfit; ..."
+$ python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))
 
 Outfit 1:
 - Vintage Levi's 501 Jeans — Medium Wash
@@ -158,7 +190,9 @@ Outfit 2:
 ```
 
 ```
-$ python -c "from tools import create_fit_card; ..."
+$ python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
+
+
 Honestly so obsessed with these vintage Levi's 501s, they literally have the best broken-in fade at the knees. Just styled them super chill with my favorite white sneakers for that ultimate effortless streetwear vibe. Snagged them on Depop for just $38 and they're finally yours!
 ```
 
@@ -175,15 +209,16 @@ Honestly so obsessed with these vintage Levi's 501s, they literally have the bes
 
 **Moment 1**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* I asked Claude to review my 5th criterion and determine if it testable.
+- *What came back:* The phrasing “successfully create a caption” is vague and it suggested I change it. 
+- *What I changed:* I changed the criterion such that it stated the caption is non-empthy since that is testable.
 
 **Moment 2**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* I asked Claude for an implementation for `create_fit_card` based on the spec I defined in `README.md`. 
+- *What came back:* It only passed only passed partial listing data by extracting stuff like the title, name, and platform as part of the prompt. It also chose vibe tags and style tags.
+- *What I changed:* I changed it such that the entire listing dict was passed into the prompt. 
+
 
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
